@@ -399,7 +399,7 @@ void demoDecompressFile(const string &inputFile, const string &outputFile)
 void decompressFile(const string &compressedFolder, const string &outputFileName)
 {
 	// Read the content of the binary file
-	ifstream binaryInFile(compressedFolder + "/compressedFile.bin", ios::binary);
+	ifstream binaryInFile(compressedFolder + "/"+compressedFolder+".bin", ios::binary);
 	if (!binaryInFile)
 	{
 		cerr << "Error opening binary input file: " << compressedFolder << "/compressedFile.bin" << endl;
@@ -419,7 +419,7 @@ void decompressFile(const string &compressedFolder, const string &outputFileName
 	binaryInFile.close();
 
 	// Read the content of the tree file
-	ifstream treeInFile(compressedFolder + "/compressedFile.tree");
+	ifstream treeInFile(compressedFolder + "/" + compressedFolder + ".tree");
 	if (!treeInFile)
 	{
 		cerr << "Error opening tree input file: " << compressedFolder << "/compressedFile.tree" << endl;
