@@ -8,7 +8,19 @@
 #include <queue>
 #include <map>
 #include <unordered_map>
+#include <direct.h>
+#include <sys/stat.h>
 using namespace std;
+
+// Function to create a directory
+bool createDirectory(const string &path)
+{
+#ifdef _WIN32
+	return _mkdir(path.c_str()) == 0;
+#else
+	return mkdir(path.c_str(), 0777) == 0;
+#endif
+}
 
 const char NEW_LINE = '$';
 const char SPACE = '^';
@@ -201,8 +213,7 @@ void demoCompressFile(const string &inputFile, const string &outputFile)
 }
 
 // Function to compress a file
-void compressFile(const string &inputFileName, const string &outputFileName)
-{
+void compressFile(const string &inputFileName, const string &outputFileName){
 	// Read the content of the input file
 	ifstream inFile(inputFileName);
 	string line, text;
@@ -231,11 +242,26 @@ void compressFile(const string &inputFileName, const string &outputFileName)
 	{
 		encoded += huffmanCode[ch];
 	}
-	ofstream binaryFile(outputFileName + ".bin", ios::binary);
+
+	// Create a folder for compressed files
+	string folderName = outputFileName;
+#ifdef _WIN32
+	if (_mkdir(folderName.c_str()) != 0)
+#else
+	if (mkdir(folderName.c_str(), 0777) != 0)
+#endif
+	{
+		cerr << "Error creating directory!" << endl;
+		return ;
+	}
+
+	// Write the compressed string to the binary file
+	string binaryFilePath = folderName + "/" + outputFileName + ".bin";
+	ofstream binaryFile(binaryFilePath, ios::binary);
 	if (!binaryFile)
 	{
-		cerr << "Error opening file for writing!" << endl;
-		return;
+		cerr << "Error opening binary file for writing!" << endl;
+		return ;
 	}
 
 	// raw    :  0100100010101011101000011110000001011000000010111111
@@ -263,7 +289,7 @@ void compressFile(const string &inputFileName, const string &outputFileName)
 		encoded += "0";
 	}
 
-	int len = encoded.length();
+	long long int len = encoded.length();
 	// Process full 8-character chunks
 	for (int i = 0; i < len; i += 8)
 	{
@@ -291,11 +317,17 @@ void compressFile(const string &inputFileName, const string &outputFileName)
 		// So, the cast to char is necessary to ensure that you are writing a single byte to the binary file, as a char is typically 8 bits (1 byte) in C++.
 	}
 	binaryFile.close();
-	cout << "Binary data has been written to " << outputFileName << endl;
-	binaryFile.close();
 
-	ofstream treeFile(outputFileName + ".tree");
+	// Write tree information to a file
+	string treeFilePath = folderName + "/" + outputFileName + ".tree";
+	ofstream treeFile(treeFilePath);
+	if (!treeFile)
+	{
+		cerr << "Error opening tree file for writing!" << endl;
+		return ;
+	}
 	string tree = "";
+	int cnt=1;
 	for (auto pair : huffmanCode)
 	{
 		if (pair.first == ' ')
@@ -308,10 +340,28 @@ void compressFile(const string &inputFileName, const string &outputFileName)
 		tree += " ";
 		tree += pair.second;
 		tree += "\n";
+		cnt++;
 	}
-	treeFile << totalCount;
+	tree.resize(tree.size() - 1);
+	string totalCountString=to_string(totalCount);
+	treeFile << totalCountString;
 	treeFile << '\n';
 	treeFile << tree;
+	long long int totalChar=(totalCountString.size()+tree.size()+cnt);
+	long long int totalSize=len+(totalChar*8);
+	long long int totalInputSize=(totalCount*8);
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	if((totalInputSize-totalSize)>0){
+		SetConsoleTextAttribute(h, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+		double reduce = ((totalInputSize - totalSize)*100)/(double)totalInputSize;
+		cout<<"Compressed folder reduce in: "<<fixed<<setprecision(2)<<reduce<<"%"<<endl;
+	}else{
+		SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_INTENSITY);
+		double increase = ((totalSize - totalInputSize)*100)/(double)totalInputSize;
+		cout<<"Compressed folder increase in: "<<fixed<<setprecision(2)<<increase<<"%"<<endl;
+	}
+	SetConsoleTextAttribute(h, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+
 	treeFile.close();
 }
 
@@ -346,12 +396,14 @@ void demoDecompressFile(const string &inputFile, const string &outputFile)
 	outFile.close();
 }
 
-void decompressFile(const string &inputFileName, const string &outputFileName)
+void decompressFile(const string &compressedFolder, const string &outputFileName)
 {
-	ifstream binaryInFile(inputFileName + ".bin", ios::binary);
+	// Read the content of the binary file
+	ifstream binaryInFile(compressedFolder + "/compressedFile.bin", ios::binary);
 	if (!binaryInFile)
 	{
-		cerr << "Error opening binary input file: " << inputFileName << ".bin" << endl;
+		cerr << "Error opening binary input file: " << compressedFolder << "/compressedFile.bin" << endl;
+		return;
 	}
 
 	string encoded = "";
@@ -366,13 +418,16 @@ void decompressFile(const string &inputFileName, const string &outputFileName)
 
 	binaryInFile.close();
 
-	ifstream treeInFile(inputFileName + ".tree");
+	// Read the content of the tree file
+	ifstream treeInFile(compressedFolder + "/compressedFile.tree");
 	if (!treeInFile)
 	{
-		cerr << "Error opening tree input file: " << inputFileName << ".tree" << endl;
+		cerr << "Error opening tree input file: " << compressedFolder << "/compressedFile.tree" << endl;
+		return;
 	}
-	int totalCount;
-	treeInFile >> totalCount;
+	string totalCountString;
+	treeInFile >> totalCountString;
+	int totalCount=stoi(totalCountString);
 
 	char ch;
 	string code;
@@ -392,7 +447,7 @@ void decompressFile(const string &inputFileName, const string &outputFileName)
 int main()
 {
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_INTENSITY);
+	SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_BLUE);
 	int option;
 	cout << "Welcome in console to compressed and decompressed a text:\n";
 	cout << endl;
@@ -417,7 +472,7 @@ int main()
 			string inputFileName, outputFileName;
 			cout << "Input filename : ";
 			cin >> inputFileName;
-			cout << "Compressed filename (Without any extension): ";
+			cout << "Compressed Folder name: ";
 			cin >> outputFileName;
 			cout << endl;
 
@@ -433,7 +488,7 @@ int main()
 		case 2:
 		{
 			string inputFileName, outputFileName;
-			cout << "Compressed filename (Without any extension): ";
+			cout << "Compressed Folder name: ";
 			cin >> inputFileName;
 			cout << "Decompressed filename: ";
 			cin >> outputFileName;
