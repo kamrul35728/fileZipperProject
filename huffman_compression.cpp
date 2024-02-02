@@ -365,13 +365,13 @@ void compressFile(const string &inputFileName, const string &outputFileName)
 	if ((totalInputSize - totalSize) > 0)
 	{
 		SetConsoleTextAttribute(h, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-		double reduce = ((totalInputSize - totalSize) * 100) / (double)totalInputSize;
+		double reduce = ((totalInputSize - totalSize) * 100.00) / (double)totalInputSize;
 		cout << "Compressed folder reduce in: " << fixed << setprecision(2) << reduce << "%" << endl;
 	}
 	else
 	{
 		SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_INTENSITY);
-		double increase = ((totalSize - totalInputSize) * 100) / (double)totalInputSize;
+		double increase = ((totalSize - totalInputSize) * 100.00) / (double)totalInputSize;
 		cout << "Compressed folder increase in: " << fixed << setprecision(2) << increase << "%" << endl;
 	}
 	SetConsoleTextAttribute(h, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
@@ -476,10 +476,11 @@ void decompressFile(const string &compressedFolder, const string &outputFileName
 
 int main()
 {
+	ios_base:: sync_with_stdio(0);
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_BLUE);
 	int option;
-	cout << "Welcome in console to compressed and decompressed a text:\n";
+	cout << "Welcome to FILE ZIPPER SOFTWARE:\n";
 	cout << endl;
 	SetConsoleTextAttribute(h, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 	do
@@ -499,62 +500,131 @@ int main()
 		{
 		case 1:
 		{
-			string inputFileName, outputFileName;
-			cout << "Input filename : ";
-			cin >> inputFileName;
-			cout << "Compressed Folder name: ";
-			cin >> outputFileName;
-			cout << endl;
+			int num;
+			cout<<"How many file do you want to compress"<<endl;
+			cin>>num;
+			for (int i = 1; i <= num; i++){
+				if(i==1 ){
+					cout<<i<< "st: ";
+				}
+				else if(i==2){
+					cout<<i<<"nd: ";
+				}
+				else if(i==3){
+					cout<<i<<"rd: ";
+				}
+				else{
+					cout<<i<<"th: ";
+				}
+				string inputFileName, outputFileName;
+				cout << "Input filename : ";
+				cin >> inputFileName;
+				cout << "Compressed Folder name: ";
+				cin >> outputFileName;
+				cout << endl;
 
-			int dotPosition = outputFileName.find_last_of(".");
-			if (dotPosition != string::npos)
-				outputFileName = outputFileName.substr(0, dotPosition);
+				int dotPosition = outputFileName.find_last_of(".");
+				if (dotPosition != string::npos)
+					outputFileName = outputFileName.substr(0, dotPosition);
 
-			compressFile(inputFileName, outputFileName);
+				compressFile(inputFileName, outputFileName);
 
-			cout << "File compressed successfully.\n";
+				cout << "File compressed successfully.\n";
+				
+			}
 			break;
+			
 		}
 		case 2:
 		{
-			string inputFileName, outputFileName;
-			cout << "Compressed Folder name: ";
-			cin >> inputFileName;
-			cout << "Decompressed filename: ";
-			cin >> outputFileName;
-			cout << endl;
+			int num;
+			cout<<"How many file do you want to decompress"<<endl;
+			cin>>num;
+			for (int i = 1; i <= num; i++){
+				if(i==1 ){
+					cout<<i<< "st: ";
+				}
+				else if(i==2){
+					cout<<i<<"nd: ";
+				}
+				else if(i==3){
+					cout<<i<<"rd: ";
+				}
+				else{
+					cout<<i<<"th: ";
+				}
+				string inputFileName, outputFileName;
+				cout << "Compressed file name: ";
+				cin >> inputFileName;
+				cout << "Decompressed file name: ";
+				cin >> outputFileName;
+				cout << endl;
 
-			int dotPosition = inputFileName.find_last_of(".");
-			if (dotPosition != std::string::npos)
-				inputFileName = inputFileName.substr(0, dotPosition);
+				int dotPosition = inputFileName.find_last_of(".");
+				if (dotPosition != std::string::npos)
+					inputFileName = inputFileName.substr(0, dotPosition);
 
-			dotPosition = outputFileName.find_last_of(".");
-			if (dotPosition == string::npos || dotPosition == 0)
-				outputFileName += ".txt";
+				dotPosition = outputFileName.find_last_of(".");
+				if (dotPosition == string::npos || dotPosition == 0)
+					outputFileName += ".txt";
 
-			decompressFile(inputFileName, outputFileName);
+				decompressFile(inputFileName, outputFileName);
 
-			cout << "File decompressed successfully.\n";
+				cout << "File decompressed successfully.\n";
+			}
 			break;
 		}
 		case 3:
 		{
+			int num;
+			cout<<"How many file do you want to compress"<<endl;
+			cin>>num;
+			for (int i = 1; i <= num; i++){
+				if(i==1 ){
+					cout<<i<< "st: ";
+				}
+				else if(i==2){
+					cout<<i<<"nd: ";
+				}
+				else if(i==3){
+					cout<<i<<"rd: ";
+				}
+				else{
+					cout<<i<<"th: ";
+				}
 			string inputFileName, outputFileName;
 			cout << "Input filename : ";
 			cin >> inputFileName;
-			cout << "Demo compressed filename (Without any extension): ";
+			cout << "Demo compressed filename: ";
 			cin >> outputFileName;
 			cout << endl;
 
 			demoCompressFile(inputFileName, outputFileName);
 
 			cout << "File compressed successfully.\n";
+			}
 			break;
 		}
 		case 4:
 		{
+			int num;
+			cout<<"How many file do you want to decompress"<<endl;
+			cin>>num;
+			for (int i = 1; i <= num; i++){
+				if(i==1 ){
+					cout<<i<< "st: ";
+				}
+				else if(i==2){
+					cout<<i<<"nd: ";
+				}
+				else if(i==3){
+					cout<<i<<"rd: ";
+				}
+				else{
+					cout<<i<<"th: ";
+				}
 			string inputFileName, outputFileName;
-			cout << "Demo compressed filename (Without any extension): ";
+			cout << "Demo compressed filename: ";
 			cin >> inputFileName;
 			cout << "Decompressed filename: ";
 			cin >> outputFileName;
@@ -563,6 +633,7 @@ int main()
 			demoDecompressFile(inputFileName, outputFileName);
 
 			cout << "File decompressed successfully.\n";
+			}
 			break;
 		}
 		case 5:
