@@ -22,8 +22,10 @@ bool createDirectory(const string &path)
 #endif
 }
 
+// These are reserved characters for compressing and decompressing dont use these characters in your text
 const char NEW_LINE = '$';
 const char SPACE = '^';
+const char FILE_SPLITTER = '#';
 
 // A Tree node
 struct Node
@@ -101,7 +103,7 @@ string decodeFromCharecterMapTree(string &encoded, unordered_map<string, char> &
 	{
 		cur += encoded[i];
 
-		if (charMap.count(cur) > 0)//charMap.count(cur) gives the number of occurrences of the key is present->it gives 1
+		if (charMap.count(cur) > 0) // charMap.count(cur) gives the number of occurrences of the key is present->it gives 1
 		{
 			if (charMap[cur] == NEW_LINE)
 				decoded += '\n';
@@ -213,7 +215,8 @@ void demoCompressFile(const string &inputFile, const string &outputFile)
 }
 
 // Function to compress a file
-void compressFile(const string &inputFileName, const string &outputFileName){
+void compressFile(const string &inputFileName, const string &outputFileName)
+{
 	// Read the content of the input file
 	ifstream inFile(inputFileName);
 	string line, text;
@@ -237,39 +240,69 @@ void compressFile(const string &inputFileName, const string &outputFileName){
 
 	unordered_map<char, string> huffmanCode = buildHuffmanTree(freq, root);
 
-	string encoded = "";
-	for (char ch : text)
-	{
-		encoded += huffmanCode[ch];
-	}
-
 	// Create a folder for compressed files
-	string folderName = outputFileName;
-#ifdef _WIN32
-	if (_mkdir(folderName.c_str()) != 0)
-#else
-	if (mkdir(folderName.c_str(), 0777) != 0)
-#endif
-	{
-		cerr << "Error creating directory!" << endl;
-		return ;
-	}
+// 	string folderName = outputFileName;
+// #ifdef _WIN32
+// 	if (_mkdir(folderName.c_str()) != 0)
+// #else
+// 	if (mkdir(folderName.c_str(), 0777) != 0)
+// #endif
+// 	{
+// 		cerr << "Error creating directory!" << endl;
+// 		return;
+// 	}
 
-	// Write the compressed string to the binary file
-	string binaryFilePath = folderName + "/" + outputFileName + ".bin";
+	// Open binary file for writing
+	string binaryFilePath = outputFileName + ".bin";
 	ofstream binaryFile(binaryFilePath, ios::binary);
 	if (!binaryFile)
 	{
 		cerr << "Error opening binary file for writing!" << endl;
-		return ;
+		return;
 	}
 
+	// Write tree information to a file
+	// string treeFilePath = folderName + "/" + outputFileName + ".tree";
+	// ofstream treeFile(treeFilePath);
+	// if (!treeFile)
+	// {
+	// 	cerr << "Error opening tree file for writing!" << endl;
+	// 	return;
+	// }
+	string tree = "";
+	int cnt = 1;
+	for (auto pair : huffmanCode)
+	{
+		if (pair.first == ' ')
+			tree += SPACE;
+		else if (pair.first == '\n')
+			tree += NEW_LINE;
+		else
+			tree += pair.first;
+
+		tree += " ";
+		tree += pair.second;
+		tree += "\n";
+		cnt++;
+	}
+	tree.resize(tree.size() - 1);
+	string totalCountString = to_string(totalCount);
+	
+	// treeFile << totalCountString;
+	// treeFile << '\n';
+	// treeFile << tree;
+
+	// binaryFile.write(reinterpret_cast<const char*>(&totalCount), sizeof(totalCount));
+    tree += FILE_SPLITTER;  // Add '#' to mark the end of the tree input
+	binaryFile.write(tree.c_str(), tree.size());
+
+	// Write the compressed string to the binary file
 	// raw    :  0100100010101011101000011110000001011000000010111111
 	// input  :  01001000  10101011  10100001  11100000  01011000  00001010  11111
 	// file   : [01001000][10101011][10100001][11100000][01011000][00001010][00011111]
 	// output :  01001000  10101011  10100001  11100000  01011000  00001010  00011111
 	// raw    :  01001000101010111010000111100000010110000000101000011111
-	
+
 	// raw    :  0100100010101011101000011110000001011000000010111111
 	// input  :  01001000  10101011  10100001  11100000  01011000  00001010  11111
 	// file   : [01001000][10101011][10100001][11100000][01011000][00001010][11111000]
@@ -282,6 +315,12 @@ void compressFile(const string &inputFileName, const string &outputFileName){
 	i = stoi("100", 2);
 	i = 4 (00000100)
 	*/
+
+	string encoded = "";
+	for (char ch : text)
+	{
+		encoded += huffmanCode[ch];
+	}
 
 	int extra = encoded.size() % 8;
 	for (int i = 0; i < (8 - extra); i++)
@@ -318,51 +357,26 @@ void compressFile(const string &inputFileName, const string &outputFileName){
 	}
 	binaryFile.close();
 
-	// Write tree information to a file
-	string treeFilePath = folderName + "/" + outputFileName + ".tree";
-	ofstream treeFile(treeFilePath);
-	if (!treeFile)
-	{
-		cerr << "Error opening tree file for writing!" << endl;
-		return ;
-	}
-	string tree = "";
-	int cnt=1;
-	for (auto pair : huffmanCode)
-	{
-		if (pair.first == ' ')
-			tree += SPACE;
-		else if (pair.first == '\n')
-			tree += NEW_LINE;
-		else
-			tree += pair.first;
-
-		tree += " ";
-		tree += pair.second;
-		tree += "\n";
-		cnt++;
-	}
-	tree.resize(tree.size() - 1);
-	string totalCountString=to_string(totalCount);
-	treeFile << totalCountString;
-	treeFile << '\n';
-	treeFile << tree;
-	long long int totalChar=(totalCountString.size()+tree.size()+cnt);
-	long long int totalSize=len+(totalChar*8);
-	long long int totalInputSize=(totalCount*8);
+	// Calculate the reduction in file size
+	long long int totalChar = (totalCountString.size() + tree.size() + cnt);
+	long long int totalSize = len + (totalChar * 8);
+	long long int totalInputSize = (totalCount * 8);
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-	if((totalInputSize-totalSize)>0){
+	if ((totalInputSize - totalSize) > 0)
+	{
 		SetConsoleTextAttribute(h, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-		double reduce = ((totalInputSize - totalSize)*100)/(double)totalInputSize;
-		cout<<"Compressed folder reduce in: "<<fixed<<setprecision(2)<<reduce<<"%"<<endl;
-	}else{
+		double reduce = ((totalInputSize - totalSize) * 100) / (double)totalInputSize;
+		cout << "Compressed folder reduce in: " << fixed << setprecision(2) << reduce << "%" << endl;
+	}
+	else
+	{
 		SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_INTENSITY);
-		double increase = ((totalSize - totalInputSize)*100)/(double)totalInputSize;
-		cout<<"Compressed folder increase in: "<<fixed<<setprecision(2)<<increase<<"%"<<endl;
+		double increase = ((totalSize - totalInputSize) * 100) / (double)totalInputSize;
+		cout << "Compressed folder increase in: " << fixed << setprecision(2) << increase << "%" << endl;
 	}
 	SetConsoleTextAttribute(h, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 
-	treeFile.close();
+	// treeFile.close();
 }
 
 // Function to decompress a file
@@ -399,44 +413,60 @@ void demoDecompressFile(const string &inputFile, const string &outputFile)
 void decompressFile(const string &compressedFolder, const string &outputFileName)
 {
 	// Read the content of the binary file
-	ifstream binaryInFile(compressedFolder + "/"+compressedFolder+".bin", ios::binary);
+	ifstream binaryInFile(compressedFolder + ".bin", ios::binary);
 	if (!binaryInFile)
 	{
 		cerr << "Error opening binary input file: " << compressedFolder << "/compressedFile.bin" << endl;
 		return;
 	}
 
-	string encoded = "";
+	string tree = "", encoded = "";
 	char byte;
+	bool isEncodingReading = false;
 
 	// [01001000][10101011][10100001][11100000][01011000][00001010][11111000]
 	while (binaryInFile.read(&byte, 1))
 	{
-		// Convert the byte to its binary representation and append to the string
-		encoded += bitset<8>(byte).to_string();
+		if(!isEncodingReading)
+		{
+			if(byte == '#')
+			{
+				isEncodingReading = true;
+				continue;
+			}
+			tree += byte;
+		}
+		else
+		{
+			// Convert the byte to its binary representation and append to the string
+			encoded += bitset<8>(byte).to_string();
+		}
 	}
 
 	binaryInFile.close();
 
 	// Read the content of the tree file
-	ifstream treeInFile(compressedFolder + "/" + compressedFolder + ".tree");
-	if (!treeInFile)
-	{
-		cerr << "Error opening tree input file: " << compressedFolder << "/compressedFile.tree" << endl;
-		return;
-	}
-	string totalCountString;
-	treeInFile >> totalCountString;
-	int totalCount=stoi(totalCountString);
+	// ifstream treeInFile(compressedFolder + "/" + compressedFolder + ".tree");
+	// if (!treeInFile)
+	// {
+	// 	cerr << "Error opening tree input file: " << compressedFolder << "/compressedFile.tree" << endl;
+	// 	return;
+	// }
+	// string totalCountString;
+	// treeInFile >> totalCountString;
+	// int totalCount = stoi(totalCountString);
 
 	char ch;
 	string code;
 	unordered_map<string, char> charMap;
-	while (treeInFile >> ch >> code)
+	
+    std::istringstream treeInputStream(tree);
+
+	while (treeInputStream >> ch >> code)
 	{
 		charMap[code] = ch;
 	}
-	string decoded = decodeFromCharecterMapTree(encoded, charMap, totalCount);
+	string decoded = decodeFromCharecterMapTree(encoded, charMap/*, totalCount */);
 
 	// Write the decompressed string to the output file
 	ofstream outFile(outputFileName);
